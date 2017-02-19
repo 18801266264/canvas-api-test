@@ -1,33 +1,26 @@
-class Greeter {
-    element: HTMLElement;
-    span: HTMLElement;
-    timerToken: number;
-
-    constructor(element: HTMLElement) {
-        this.element = element;
-        this.element.innerHTML += "The time is: ";
-        this.span = document.createElement('span');
-        this.element.appendChild(this.span);
-        this.span.innerText = new Date().toUTCString();
-    }
-
-    start() {
-        this.timerToken = setInterval(() => this.span.innerHTML = new Date().toUTCString(), 500);
-    }
-
-    stop() {
-        clearTimeout(this.timerToken);
-    }
-
-}
-
 window.onload = () => {
 
     var canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
     var context = canvas.getContext("2d");
+
     var container = new DisplayObjectContainer();
-    var image = new DrawBitmap();
-    var text = new DrawText();
+    container.alpha = 0;
+
+    var image = new Bitmap();
+    image.alpha = 0.5;
+    image.src = "captain.jpg";
+    image.x = 100;
+    image.y = 100;
+
+    var text = new TextField();
+    text.x = 50;
+    text.y = 50;
+    text.alpha = 0.5;
+    text.color = "#FF0000";
+    text.fontName = "Arial";
+    text.fontSize = 20;
+    text.text = "Hello World"
+
     container.addChild(image);
     container.addChild(text);
     container.draw(context);
@@ -35,37 +28,87 @@ window.onload = () => {
 };
 
 interface Drawable {
-    draw(contextId, x: number, y: number);
+    draw(context: CanvasRenderingContext2D);
 }
 
-class DisplayObjectContainer implements Drawable {
-    list = [];
-    addChild(x) {
-        this.list.push(x);
+class DisplayObject implements Drawable {
+    x = 0;
+    y = 0;
+    scaleX = 1;
+    scaleY = 1;
+    alpha = 1;
+    globalAlpha = 1;
+
+    parent: DisplayObjectContainer;
+
+    draw(context: CanvasRenderingContext2D) {
+        if (this.parent) {
+            this.globalAlpha = this.parent.globalAlpha * this.alpha;
+        } else {
+            this.globalAlpha = this.alpha;
+        }
+        context.globalAlpha = this.globalAlpha;
+        this.render(context);
     }
-    draw(contextId) {
-        for (let element of this.list) {
-            element.draw(contextId);
+
+    render(context: CanvasRenderingContext2D) { }
+}
+
+class DisplayObjectContainer extends DisplayObject {
+    list: DisplayObject[] = [];
+
+    render(context: CanvasRenderingContext2D) {
+        for (let displayObject of this.list) {
+            displayObject.draw(context);
         }
     }
+
+    addChild(child: DisplayObject) {
+        this.list.push(child);
+        child.parent = this;
+    }
+
 }
 
-class DrawText extends DisplayObjectContainer {
-    draw(contextId) {
-        var text = new Text();
+class TextField extends DisplayObject {
+    text = "";
+    color = "";
+    fontSize = 10;
+    fontName = "";
+    render(context: CanvasRenderingContext2D) {
+        context.fillStyle = this.color;
+        // context.globalAlpha = this.alpha;
+        context.font = this.fontSize.toString() + "px " + this.fontName.toString();
+        context.fillText(this.text, this.x, this.y + this.fontSize);
 
     }
 }
 
-class DrawBitmap extends DisplayObjectContainer {
+class Bitmap extends DisplayObject {
+    private image: HTMLImageElement = null;
+    private isLoaded = false;
+    constructor() {
+        super();
+        this.image = document.createElement("img");
+    }
+    private _src = "";
+    set src(value: string) {
+        this._src = value;
+        this.isLoaded = false;
+    }
 
-    draw(contextId) {
-        var image = new Image();
-        image.src = "captain.jpg";
-        image.onload = () => {
-            contextId.drawImage(image, 0, 0);
+    render(context: CanvasRenderingContext2D) {
+        // context.globalAlpha = this.alpha;
+        if (this.isLoaded) {
+            context.drawImage(this.image, this.x, this.y, this.image.width * this.scaleX, this.image.height * this.scaleY);
         }
-
+        else {
+            this.image.src = this._src;
+            this.image.onload = () => {
+                context.drawImage(this.image, this.x, this.y, this.image.width * this.scaleX, this.image.height * this.scaleY);
+                this.isLoaded = true;
+            }
+        }
     }
 }
 

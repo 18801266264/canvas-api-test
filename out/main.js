@@ -3,70 +3,116 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var Greeter = (function () {
-    function Greeter(element) {
-        this.element = element;
-        this.element.innerHTML += "The time is: ";
-        this.span = document.createElement('span');
-        this.element.appendChild(this.span);
-        this.span.innerText = new Date().toUTCString();
-    }
-    Greeter.prototype.start = function () {
-        var _this = this;
-        this.timerToken = setInterval(function () { return _this.span.innerHTML = new Date().toUTCString(); }, 500);
-    };
-    Greeter.prototype.stop = function () {
-        clearTimeout(this.timerToken);
-    };
-    return Greeter;
-}());
 window.onload = function () {
     var canvas = document.getElementById("myCanvas");
     var context = canvas.getContext("2d");
     var container = new DisplayObjectContainer();
-    var image = new DrawBitmap();
-    var text = new DrawText();
+    container.alpha = 0;
+    var image = new Bitmap();
+    image.alpha = 0.5;
+    image.src = "captain.jpg";
+    image.x = 100;
+    image.y = 100;
+    var text = new TextField();
+    text.x = 50;
+    text.y = 50;
+    text.alpha = 0.5;
+    text.color = "#FF0000";
+    text.fontName = "Arial";
+    text.fontSize = 20;
+    text.text = "Hello World";
     container.addChild(image);
     container.addChild(text);
     container.draw(context);
 };
-var DisplayObjectContainer = (function () {
+var DisplayObject = (function () {
+    function DisplayObject() {
+        this.x = 0;
+        this.y = 0;
+        this.scaleX = 1;
+        this.scaleY = 1;
+        this.alpha = 1;
+        this.globalAlpha = 1;
+    }
+    DisplayObject.prototype.draw = function (context) {
+        if (this.parent) {
+            this.globalAlpha = this.parent.globalAlpha * this.alpha;
+        }
+        else {
+            this.globalAlpha = this.alpha;
+        }
+        context.globalAlpha = this.globalAlpha;
+        this.render(context);
+    };
+    DisplayObject.prototype.render = function (context) { };
+    return DisplayObject;
+}());
+var DisplayObjectContainer = (function (_super) {
+    __extends(DisplayObjectContainer, _super);
     function DisplayObjectContainer() {
+        _super.apply(this, arguments);
         this.list = [];
     }
-    DisplayObjectContainer.prototype.addChild = function (x) {
-        this.list.push(x);
-    };
-    DisplayObjectContainer.prototype.draw = function (contextId) {
+    DisplayObjectContainer.prototype.render = function (context) {
         for (var _i = 0, _a = this.list; _i < _a.length; _i++) {
-            var element = _a[_i];
-            element.draw(contextId);
+            var displayObject = _a[_i];
+            displayObject.draw(context);
         }
     };
+    DisplayObjectContainer.prototype.addChild = function (child) {
+        this.list.push(child);
+        child.parent = this;
+    };
     return DisplayObjectContainer;
-}());
-var DrawText = (function (_super) {
-    __extends(DrawText, _super);
-    function DrawText() {
+}(DisplayObject));
+var TextField = (function (_super) {
+    __extends(TextField, _super);
+    function TextField() {
         _super.apply(this, arguments);
+        this.text = "";
+        this.color = "";
+        this.fontSize = 10;
+        this.fontName = "";
     }
-    DrawText.prototype.draw = function (contextId) {
-        var text = new Text();
+    TextField.prototype.render = function (context) {
+        context.fillStyle = this.color;
+        // context.globalAlpha = this.alpha;
+        context.font = this.fontSize.toString() + "px " + this.fontName.toString();
+        context.fillText(this.text, this.x, this.y + this.fontSize);
     };
-    return DrawText;
-}(DisplayObjectContainer));
-var DrawBitmap = (function (_super) {
-    __extends(DrawBitmap, _super);
-    function DrawBitmap() {
-        _super.apply(this, arguments);
+    return TextField;
+}(DisplayObject));
+var Bitmap = (function (_super) {
+    __extends(Bitmap, _super);
+    function Bitmap() {
+        _super.call(this);
+        this.image = null;
+        this.isLoaded = false;
+        this._src = "";
+        this.image = document.createElement("img");
     }
-    DrawBitmap.prototype.draw = function (contextId) {
-        var image = new Image();
-        image.src = "captain.jpg";
-        image.onload = function () {
-            contextId.drawImage(image, 0, 0);
-        };
+    Object.defineProperty(Bitmap.prototype, "src", {
+        set: function (value) {
+            this._src = value;
+            this.isLoaded = false;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Bitmap.prototype.render = function (context) {
+        var _this = this;
+        // context.globalAlpha = this.alpha;
+        if (this.isLoaded) {
+            context.drawImage(this.image, this.x, this.y, this.image.width * this.scaleX, this.image.height * this.scaleY);
+        }
+        else {
+            this.image.src = this._src;
+            this.image.onload = function () {
+                context.drawImage(_this.image, _this.x, _this.y, _this.image.width * _this.scaleX, _this.image.height * _this.scaleY);
+                _this.isLoaded = true;
+            };
+        }
     };
-    return DrawBitmap;
-}(DisplayObjectContainer));
+    return Bitmap;
+}(DisplayObject));
 //# sourceMappingURL=main.js.map
