@@ -55,6 +55,13 @@ declare namespace engine {
     }
 }
 declare namespace engine {
+    type MovieClipData = {
+        _name: string;
+        _frames: MovieClipFrameData[];
+    };
+    type MovieClipFrameData = {
+        "image": string;
+    };
     interface Drawable {
         draw(context: CanvasRenderingContext2D): any;
     }
@@ -94,13 +101,25 @@ declare namespace engine {
         hitTest(x: any, y: any): this;
     }
     class Bitmap extends DisplayObject {
-        private image;
+        image: HTMLImageElement;
         private isLoaded;
         constructor();
-        private _src;
-        src: string;
+        _src: string;
+        setsrc(value: string): void;
         render(context: CanvasRenderingContext2D): void;
         hitTest(x: any, y: any): this;
+    }
+    class MovieClip extends Bitmap {
+        private advancedTime;
+        private static FRAME_TIME;
+        private TOTAL_FRAME;
+        private currentFrameIndex;
+        private data;
+        constructor(data: engine.MovieClipData);
+        ticker: (deltaTime: any) => void;
+        play(): void;
+        stop(): void;
+        setMovieClipData(data: MovieClipData): void;
     }
 }
 declare namespace engine {

@@ -1,12 +1,12 @@
 namespace engine {
 
-    type MovieClipData = {
+    export type MovieClipData = {
 
-        name: string,
-        frames: MovieClipFrameData[]
+        _name: string,
+        _frames: MovieClipFrameData[]
     }
 
-    type MovieClipFrameData = {
+    export type MovieClipFrameData = {
         "image": string
     }
 
@@ -46,6 +46,7 @@ namespace engine {
             }
 
             context.globalAlpha = this.globalAlpha;
+            context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
             this.render(context);
         }
 
@@ -112,7 +113,7 @@ namespace engine {
         render(context: CanvasRenderingContext2D) {
             context.fillStyle = this.color;
             context.font = this.fontSize.toString() + "px " + this.fontName.toString();
-            context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+            // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
             context.fillText(this.text, 0, 0 + this.fontSize);
 
         }
@@ -133,30 +134,28 @@ namespace engine {
     }
 
     export class Bitmap extends DisplayObject {
-        private image: HTMLImageElement = null;
+        // protected image: HTMLImageElement = null;
+        image = new Image();
         private isLoaded = false;
         constructor() {
             super();
-            this.image = document.createElement("img");
+            // this.image = document.createElement("img");
         }
-        private _src = "";
-        set src(value: string) {
+        _src = "";
+        setsrc(value: string) {
             this._src = value;
             this.isLoaded = false;
         }
 
         render(context: CanvasRenderingContext2D) {
-            if (this.isLoaded) {
-                context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+            this.image.src = this._src;
+            if (this.isLoaded == true) {
+                // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
                 context.drawImage(this.image, 0, 0);
 
-            }
-            else {
-                this.image.src = this._src;
+            } else {
                 this.image.onload = () => {
-                    context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
-                    context.drawImage(this.image, 0, 0);
-
+                    // context.drawImage(this.image, 0, 0);
                     this.isLoaded = true;
                 }
             }
@@ -175,4 +174,59 @@ namespace engine {
             }
         };
     }
+
+    export class MovieClip extends Bitmap {
+
+        private advancedTime: number = 0;
+
+        private static FRAME_TIME = 120;
+
+        private TOTAL_FRAME = 2;
+
+        private currentFrameIndex: number;
+
+        private data: engine.MovieClipData;
+
+        constructor(data: engine.MovieClipData) {
+            super();
+            this.setMovieClipData(data);
+            this.TOTAL_FRAME = data._frames.length;
+        //    this.play();
+        }
+
+        ticker = (deltaTime) => {
+            // this.removeChild();
+            this.advancedTime += deltaTime;
+            if (this.advancedTime >= MovieClip.FRAME_TIME * this.TOTAL_FRAME) {
+                this.advancedTime -= MovieClip.FRAME_TIME * this.TOTAL_FRAME;
+            }
+            this.currentFrameIndex = Math.floor(this.advancedTime / MovieClip.FRAME_TIME);
+
+            if (this.currentFrameIndex <= this.TOTAL_FRAME) {
+                let data = this.data;
+                let frameData = data._frames[this.currentFrameIndex];
+                let url = frameData.image;
+                console.log(url);
+                // this.setsrc(url);
+                this._src = url;
+
+            }
+        }
+
+        play() {
+            Ticker.getInstance().register(this.ticker);
+        }
+
+        stop() {
+            Ticker.getInstance().unregister(this.ticker)
+        }
+
+        setMovieClipData(data: MovieClipData) {
+            this.data = data;
+            this.currentFrameIndex = 0;
+            // 创建 / 更新 
+
+        }
+    }
+
 }

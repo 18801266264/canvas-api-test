@@ -7,49 +7,29 @@
 var canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
 var stage = engine.run(canvas);
 
-var container = new engine.DisplayObjectContainer();
-container.alpha = 1;
-container.x = 50;
-container.touchEnabled = true;
+let standFrame1: engine.MovieClipFrameData = { image: "npc1.jpg" };
+let standFrames: engine.MovieClipFrameData[] = [standFrame1];
+let standMovieClipData: engine.MovieClipData = { _name: "stand", _frames: standFrames };
+let playerstand_mc: engine.MovieClip = new engine.MovieClip(standMovieClipData);
 
-var image = new engine.Bitmap();
-image.alpha = 0.5;
-image.src = "captain.jpg";
-image.scaleX = 1;
-image.scaleY = 1;
-image.x = 50;
-image.y = 50;
-image.touchEnabled = true;
+let walkFrame1: engine.MovieClipFrameData = { image: "npc2.jpg" };
+let walkFrames: engine.MovieClipFrameData[] = [walkFrame1];
+let walkMovieClipData: engine.MovieClipData = { _name: "walk", _frames: walkFrames };
+let playerwalk_mc: engine.MovieClip = new engine.MovieClip(walkMovieClipData);
 
-var text = new engine.TextField();
-text.x = 50;
-text.y = 50;
-text.scaleY = 1;
-text.alpha = 0.5;
-text.color = "#FF0000";
-text.fontName = "Arial";
-text.fontSize = 20;
-text.text = "Hello World";
+var PlayerContainer = new engine.DisplayObjectContainer();
+PlayerContainer.addChild(playerstand_mc);
+PlayerContainer.addChild(playerwalk_mc);
 
-container.addChild(image);
-container.addChild(text);
-
-stage.addChild(container);
-
-var imageY = image.y;
-
-// image.addEventListener("mousedown", (e) => {
-//     console.log("image");
-// }, false)
-image.addEventListener("mousemove", (e) => {
-    image.y += e.movementY;
-    console.log(e.movementY);
+var m: StateMachine = new StateMachine(stage, playerstand_mc, playerwalk_mc, PlayerContainer);
+playerstand_mc.play();
+PlayerContainer.touchEnabled = true;
+PlayerContainer.addEventListener("mousedown", (e) => {
+    m.setState("move");
+    playerwalk_mc.play();
+    PlayerContainer.x++;
 }, false)
 
-text.addEventListener("mousedown", (e) => {
-    console.log("text");
-}, false)
-container.addEventListener("mousedown", (e) => {
-    console.log("container");
-}, false)
 
+
+stage.addChild(PlayerContainer);

@@ -20,7 +20,7 @@ namespace engine {
         }
 
         unregister(listener: Ticker_Listener_Type) {
-
+            
         }
 
         notify(deltaTime: number) {

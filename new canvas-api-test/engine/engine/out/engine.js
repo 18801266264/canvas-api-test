@@ -200,6 +200,7 @@ var engine;
                 this.overallMatrix = this.relativeMatrix;
             }
             context.globalAlpha = this.globalAlpha;
+            context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
             this.render(context);
         };
         DisplayObject.prototype.addEventListener = function (type, func, capture) {
@@ -269,7 +270,7 @@ var engine;
         TextField.prototype.render = function (context) {
             context.fillStyle = this.color;
             context.font = this.fontSize.toString() + "px " + this.fontName.toString();
-            context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+            // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
             context.fillText(this.text, 0, 0 + this.fontSize);
         };
         TextField.prototype.hitTest = function (x, y) {
@@ -293,30 +294,26 @@ var engine;
         __extends(Bitmap, _super);
         function Bitmap() {
             _super.call(this);
-            this.image = null;
+            // protected image: HTMLImageElement = null;
+            this.image = new Image();
             this.isLoaded = false;
             this._src = "";
-            this.image = document.createElement("img");
+            // this.image = document.createElement("img");
         }
-        Object.defineProperty(Bitmap.prototype, "src", {
-            set: function (value) {
-                this._src = value;
-                this.isLoaded = false;
-            },
-            enumerable: true,
-            configurable: true
-        });
+        Bitmap.prototype.setsrc = function (value) {
+            this._src = value;
+            this.isLoaded = false;
+        };
         Bitmap.prototype.render = function (context) {
             var _this = this;
-            if (this.isLoaded) {
-                context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+            this.image.src = this._src;
+            if (this.isLoaded == true) {
+                // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
                 context.drawImage(this.image, 0, 0);
             }
             else {
-                this.image.src = this._src;
                 this.image.onload = function () {
-                    context.setTransform(_this.overallMatrix.a, _this.overallMatrix.b, _this.overallMatrix.c, _this.overallMatrix.d, _this.overallMatrix.tx, _this.overallMatrix.ty);
-                    context.drawImage(_this.image, 0, 0);
+                    // context.drawImage(this.image, 0, 0);
                     _this.isLoaded = true;
                 };
             }
@@ -338,6 +335,48 @@ var engine;
         return Bitmap;
     }(DisplayObject));
     engine.Bitmap = Bitmap;
+    var MovieClip = (function (_super) {
+        __extends(MovieClip, _super);
+        function MovieClip(data) {
+            var _this = this;
+            _super.call(this);
+            this.advancedTime = 0;
+            this.TOTAL_FRAME = 2;
+            this.ticker = function (deltaTime) {
+                // this.removeChild();
+                _this.advancedTime += deltaTime;
+                if (_this.advancedTime >= MovieClip.FRAME_TIME * _this.TOTAL_FRAME) {
+                    _this.advancedTime -= MovieClip.FRAME_TIME * _this.TOTAL_FRAME;
+                }
+                _this.currentFrameIndex = Math.floor(_this.advancedTime / MovieClip.FRAME_TIME);
+                if (_this.currentFrameIndex <= _this.TOTAL_FRAME) {
+                    var data = _this.data;
+                    var frameData = data._frames[_this.currentFrameIndex];
+                    var url = frameData.image;
+                    console.log(url);
+                    // this.setsrc(url);
+                    _this._src = url;
+                }
+            };
+            this.setMovieClipData(data);
+            this.TOTAL_FRAME = data._frames.length;
+            //    this.play();
+        }
+        MovieClip.prototype.play = function () {
+            engine.Ticker.getInstance().register(this.ticker);
+        };
+        MovieClip.prototype.stop = function () {
+            engine.Ticker.getInstance().unregister(this.ticker);
+        };
+        MovieClip.prototype.setMovieClipData = function (data) {
+            this.data = data;
+            this.currentFrameIndex = 0;
+            // 创建 / 更新 
+        };
+        MovieClip.FRAME_TIME = 120;
+        return MovieClip;
+    }(Bitmap));
+    engine.MovieClip = MovieClip;
 })(engine || (engine = {}));
 var engine;
 (function (engine) {
