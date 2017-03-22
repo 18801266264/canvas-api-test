@@ -63,9 +63,10 @@ declare namespace engine {
         "image": string;
     };
     interface Drawable {
-        draw(context: CanvasRenderingContext2D): any;
+        update(): any;
     }
     abstract class DisplayObject implements Drawable {
+        type: string;
         x: number;
         y: number;
         scaleX: number;
@@ -79,8 +80,8 @@ declare namespace engine {
         relativeMatrix: Matrix;
         overallMatrix: Matrix;
         eventListenerList: any[];
-        draw(context: CanvasRenderingContext2D): void;
-        abstract render(context: CanvasRenderingContext2D): any;
+        constructor(type: string);
+        update(): void;
         abstract hitTest(x: any, y: any): any;
         addEventListener(type: string, func: (e?: MouseEvent) => void, capture: boolean): void;
         dispatchEvent(type: string, target: DisplayObject, currentTarget: DisplayObject): void;
@@ -88,7 +89,8 @@ declare namespace engine {
     class DisplayObjectContainer extends DisplayObject {
         isContainer: boolean;
         list: DisplayObject[];
-        render(context: CanvasRenderingContext2D): void;
+        constructor();
+        update(): void;
         addChild(child: DisplayObject): void;
         hitTest(x: any, y: any): DisplayObject;
     }
@@ -97,16 +99,15 @@ declare namespace engine {
         color: string;
         fontSize: number;
         fontName: string;
-        render(context: CanvasRenderingContext2D): void;
+        constructor();
         hitTest(x: any, y: any): this;
     }
     class Bitmap extends DisplayObject {
         image: HTMLImageElement;
-        private isLoaded;
+        isLoaded: boolean;
         constructor();
         _src: string;
         setsrc(value: string): void;
-        render(context: CanvasRenderingContext2D): void;
         hitTest(x: any, y: any): this;
     }
     class MovieClip extends Bitmap {

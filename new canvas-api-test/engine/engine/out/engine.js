@@ -176,7 +176,8 @@ var engine;
 var engine;
 (function (engine) {
     var DisplayObject = (function () {
-        function DisplayObject() {
+        function DisplayObject(type) {
+            this.type = "DisplayObject";
             this.x = 0;
             this.y = 0;
             this.scaleX = 1;
@@ -187,9 +188,12 @@ var engine;
             this.isContainer = false;
             this.touchEnabled = false;
             this.eventListenerList = [];
-        }
-        DisplayObject.prototype.draw = function (context) {
+            this.type = type;
             this.relativeMatrix = new engine.Matrix();
+            this.overallMatrix = new engine.Matrix();
+        }
+        DisplayObject.prototype.update = function () {
+            //   this.relativeMatrix = new Matrix();
             this.relativeMatrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);
             if (this.parent) {
                 this.globalAlpha = this.parent.globalAlpha * this.alpha;
@@ -199,9 +203,6 @@ var engine;
                 this.globalAlpha = this.alpha;
                 this.overallMatrix = this.relativeMatrix;
             }
-            context.globalAlpha = this.globalAlpha;
-            context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
-            this.render(context);
         };
         DisplayObject.prototype.addEventListener = function (type, func, capture) {
             var listener = new engine.TouchEventListener(type, func, capture);
@@ -226,15 +227,21 @@ var engine;
     engine.DisplayObject = DisplayObject;
     var DisplayObjectContainer = (function (_super) {
         __extends(DisplayObjectContainer, _super);
+        // render(context: CanvasRenderingContext2D) {
+        //     for (let displayObject of this.list) {
+        //         displayObject.draw(context);
+        //     }
+        // }
         function DisplayObjectContainer() {
-            _super.apply(this, arguments);
+            _super.call(this, "DisplayObjectContainer");
             this.isContainer = true;
             this.list = [];
         }
-        DisplayObjectContainer.prototype.render = function (context) {
+        DisplayObjectContainer.prototype.update = function () {
+            _super.prototype.update.call(this);
             for (var _i = 0, _a = this.list; _i < _a.length; _i++) {
-                var displayObject = _a[_i];
-                displayObject.draw(context);
+                var drawable = _a[_i];
+                drawable.update();
             }
         };
         DisplayObjectContainer.prototype.addChild = function (child) {
@@ -260,19 +267,19 @@ var engine;
     engine.DisplayObjectContainer = DisplayObjectContainer;
     var TextField = (function (_super) {
         __extends(TextField, _super);
+        // render(context: CanvasRenderingContext2D) {
+        //     context.fillStyle = this.color;
+        //     context.font = this.fontSize.toString() + "px " + this.fontName.toString();
+        //     // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+        //     context.fillText(this.text, 0, 0 + this.fontSize);
+        // }
         function TextField() {
-            _super.apply(this, arguments);
+            _super.call(this, "TextField");
             this.text = "";
             this.color = "";
             this.fontSize = 10;
             this.fontName = "";
         }
-        TextField.prototype.render = function (context) {
-            context.fillStyle = this.color;
-            context.font = this.fontSize.toString() + "px " + this.fontName.toString();
-            // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
-            context.fillText(this.text, 0, 0 + this.fontSize);
-        };
         TextField.prototype.hitTest = function (x, y) {
             var point = new engine.Point(x, y);
             var invertChildRelativeMatrix = engine.invertMatrix(this.relativeMatrix);
@@ -293,7 +300,7 @@ var engine;
     var Bitmap = (function (_super) {
         __extends(Bitmap, _super);
         function Bitmap() {
-            _super.call(this);
+            _super.call(this, "Bitmap");
             // protected image: HTMLImageElement = null;
             this.image = new Image();
             this.isLoaded = false;
@@ -304,20 +311,18 @@ var engine;
             this._src = value;
             this.isLoaded = false;
         };
-        Bitmap.prototype.render = function (context) {
-            var _this = this;
-            this.image.src = this._src;
-            if (this.isLoaded == true) {
-                // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
-                context.drawImage(this.image, 0, 0);
-            }
-            else {
-                this.image.onload = function () {
-                    // context.drawImage(this.image, 0, 0);
-                    _this.isLoaded = true;
-                };
-            }
-        };
+        // render(context: CanvasRenderingContext2D) {
+        //     this.image.src = this._src;
+        //     if (this.isLoaded == true) {
+        //         // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+        //         context.drawImage(this.image, 0, 0);
+        //     } else {
+        //         this.image.onload = () => {
+        //             // context.drawImage(this.image, 0, 0);
+        //             this.isLoaded = true;
+        //         }
+        //     }
+        // }
         Bitmap.prototype.hitTest = function (x, y) {
             var point = new engine.Point(x, y);
             var invertChildRelativeMatrix = engine.invertMatrix(this.relativeMatrix);
@@ -384,6 +389,7 @@ var engine;
         var stage = new engine.DisplayObjectContainer();
         var context = canvas.getContext("2d");
         var lastNow = Date.now();
+        var renderer = new CanvasRenderer(stage, context);
         var frameHandler = function () {
             var now = Date.now();
             var deltaTime = now - lastNow;
@@ -391,7 +397,8 @@ var engine;
             context.setTransform(1, 0, 0, 1, 0, 0);
             context.clearRect(0, 0, canvas.width, canvas.height);
             context.save();
-            stage.draw(context);
+            stage.update();
+            renderer.render();
             context.restore();
             lastNow = now;
             window.requestAnimationFrame(frameHandler);
@@ -431,4 +438,53 @@ var engine;
         // }, 30)
         return stage;
     };
+    var CanvasRenderer = (function () {
+        function CanvasRenderer(stage, context2D) {
+            this.stage = stage;
+            this.context2D = context2D;
+        }
+        CanvasRenderer.prototype.render = function () {
+            var stage = this.stage;
+            var context2D = this.context2D;
+            this.renderContainer(stage);
+        };
+        CanvasRenderer.prototype.renderContainer = function (container) {
+            for (var _i = 0, _a = container.list; _i < _a.length; _i++) {
+                var child = _a[_i];
+                var context2D = this.context2D;
+                context2D.globalAlpha = child.globalAlpha;
+                var m = child.overallMatrix;
+                context2D.setTransform(m.a, m.b, m.c, m.d, m.tx, m.ty);
+                if (child.type == "Bitmap") {
+                    this.renderBitmap(child);
+                }
+                else if (child.type == "TextField") {
+                    this.renderTextField(child);
+                }
+                else if (child.type == "DisplayObjectContainer") {
+                    this.renderContainer(child);
+                }
+            }
+        };
+        CanvasRenderer.prototype.renderBitmap = function (bitmap) {
+            bitmap.image.src = bitmap._src;
+            if (bitmap.isLoaded == true) {
+                // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+                this.context2D.drawImage(bitmap.image, 0, 0);
+            }
+            else {
+                bitmap.image.onload = function () {
+                    // context.drawImage(this.image, 0, 0);
+                    //   this.context2D.drawImage(bitmap.image, 0, 0);
+                    bitmap.isLoaded = true;
+                };
+            }
+        };
+        CanvasRenderer.prototype.renderTextField = function (textField) {
+            this.context2D.fillStyle = textField.color;
+            this.context2D.font = textField.fontSize.toString() + "px " + textField.fontName.toString();
+            this.context2D.fillText(textField.text, 0, 0 + textField.fontSize);
+        };
+        return CanvasRenderer;
+    }());
 })(engine || (engine = {}));

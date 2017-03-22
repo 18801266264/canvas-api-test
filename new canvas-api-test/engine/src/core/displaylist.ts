@@ -11,10 +11,11 @@ namespace engine {
     }
 
     export interface Drawable {
-        draw(context: CanvasRenderingContext2D);
+        update();
     }
 
     export abstract class DisplayObject implements Drawable {
+        type = "DisplayObject"
         x = 0;
         y = 0;
         scaleX = 1;
@@ -33,8 +34,14 @@ namespace engine {
 
         eventListenerList = [];
 
-        draw(context: CanvasRenderingContext2D) {
+        constructor(type: string) {
+            this.type = type;
             this.relativeMatrix = new Matrix();
+            this.overallMatrix = new Matrix();
+        }
+
+        update() {
+            //   this.relativeMatrix = new Matrix();
             this.relativeMatrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);
 
             if (this.parent) {
@@ -45,12 +52,8 @@ namespace engine {
                 this.overallMatrix = this.relativeMatrix;
             }
 
-            context.globalAlpha = this.globalAlpha;
-            context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
-            this.render(context);
         }
 
-        abstract render(context: CanvasRenderingContext2D);
         abstract hitTest(x, y);
 
         addEventListener(type: string, func: (e?: MouseEvent) => void, capture: boolean) {
@@ -76,10 +79,21 @@ namespace engine {
         isContainer = true;
         list: DisplayObject[] = [];
 
-        render(context: CanvasRenderingContext2D) {
+        // render(context: CanvasRenderingContext2D) {
 
-            for (let displayObject of this.list) {
-                displayObject.draw(context);
+        //     for (let displayObject of this.list) {
+        //         displayObject.draw(context);
+        //     }
+        // }
+
+        constructor() {
+            super("DisplayObjectContainer");
+        }
+
+        update() {
+            super.update();
+            for (let drawable of this.list) {
+                drawable.update();
             }
         }
 
@@ -110,12 +124,15 @@ namespace engine {
         fontSize = 10;
         fontName = "";
 
-        render(context: CanvasRenderingContext2D) {
-            context.fillStyle = this.color;
-            context.font = this.fontSize.toString() + "px " + this.fontName.toString();
-            // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
-            context.fillText(this.text, 0, 0 + this.fontSize);
+        // render(context: CanvasRenderingContext2D) {
+        //     context.fillStyle = this.color;
+        //     context.font = this.fontSize.toString() + "px " + this.fontName.toString();
+        //     // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+        //     context.fillText(this.text, 0, 0 + this.fontSize);
 
+        // }
+        constructor() {
+            super("TextField");
         }
 
         hitTest(x, y) {
@@ -136,9 +153,9 @@ namespace engine {
     export class Bitmap extends DisplayObject {
         // protected image: HTMLImageElement = null;
         image = new Image();
-        private isLoaded = false;
+        isLoaded = false;
         constructor() {
-            super();
+            super("Bitmap");
             // this.image = document.createElement("img");
         }
         _src = "";
@@ -147,19 +164,19 @@ namespace engine {
             this.isLoaded = false;
         }
 
-        render(context: CanvasRenderingContext2D) {
-            this.image.src = this._src;
-            if (this.isLoaded == true) {
-                // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
-                context.drawImage(this.image, 0, 0);
+        // render(context: CanvasRenderingContext2D) {
+        //     this.image.src = this._src;
+        //     if (this.isLoaded == true) {
+        //         // context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+        //         context.drawImage(this.image, 0, 0);
 
-            } else {
-                this.image.onload = () => {
-                    // context.drawImage(this.image, 0, 0);
-                    this.isLoaded = true;
-                }
-            }
-        }
+        //     } else {
+        //         this.image.onload = () => {
+        //             // context.drawImage(this.image, 0, 0);
+        //             this.isLoaded = true;
+        //         }
+        //     }
+        // }
 
         hitTest(x, y) {
             let point = new Point(x, y);
@@ -191,7 +208,7 @@ namespace engine {
             super();
             this.setMovieClipData(data);
             this.TOTAL_FRAME = data._frames.length;
-        //    this.play();
+            //    this.play();
         }
 
         ticker = (deltaTime) => {
